@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Heart } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +25,8 @@ function ResultContent() {
             const stored = sessionStorage.getItem('viton_images');
             if (stored) {
                 try {
-                    setImages(JSON.parse(stored).map(normalizeSrc));
+                    const arr = JSON.parse(stored) as string[];
+                    setImages(arr.map(normalizeSrc));
                 } catch {
                     setImages([]);
                 }
@@ -44,7 +44,7 @@ function ResultContent() {
                 </h1>
 
                 <section className="mt-5 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                    <div className="relative h-72 w-full flex items-center justify-center bg-slate-50">
+                    <div className="relative h-72 w-full overflow-hidden rounded-lg flex items-center justify-center bg-slate-50">
                         {success ? (
                             <img
                                 src={images[0]}
@@ -62,22 +62,21 @@ function ResultContent() {
                 {success && images.length > 1 && (
                     <section className="mt-4 grid grid-cols-2 gap-3">
                         {images.slice(1).map((url, idx) => (
-                            <div key={idx} className="aspect-square flex items-center justify-center bg-slate-100 rounded-xl">
-                                <img src={url} alt={`추가결과 ${idx}`} className="max-h-full max-w-full object-contain" />
+                            <div
+                                key={idx}
+                                className="aspect-square flex items-center justify-center bg-slate-100 rounded-xl"
+                            >
+                                <img
+                                    src={url}
+                                    alt={`추가결과 ${idx}`}
+                                    className="max-h-full max-w-full object-contain"
+                                />
                             </div>
                         ))}
                     </section>
                 )}
 
                 <section className="mt-8 space-y-4">
-                    <button
-                        type="button"
-                        className="w-full rounded-full bg-slate-900 px-5 py-3 text-white shadow-sm"
-                    >
-            <span className="inline-flex items-center gap-2">
-              <Heart className="h-5 w-5" /> 좋아요
-            </span>
-                    </button>
                     <button
                         type="button"
                         onClick={() => router.push('/')}

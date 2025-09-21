@@ -1,39 +1,32 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type Gender = 'female' | 'male';
-type GenderKo = '남성' | '여성';
+type Gender = 'male' | 'female';
+
+const GENDER_LABEL: Record<Gender, string> = {
+    male: '남성',
+    female: '여성',
+};
 
 const HEIGHT: Record<Gender, string[]> = {
     female: ['150cm 이하', '151~159cm', '160~169cm', '170cm 이상'],
     male: ['170cm 이하', '171~175cm', '176~179cm', '180cm 이상'],
 };
 const WEIGHT: Record<Gender, string[]> = {
-    female: ['50kg 이하', '51~60kg', '61~69kg', '70kg 이상'],
+    female: ['50kg 이하', '51~60kg', '61kg~69kg', '70kg 이상'],
     male: ['70kg 이하', '71~85kg', '86~99kg', '100kg 이상'],
 };
-const GENDER_LABEL: Record<Gender, GenderKo> = {
-    male: '남성',
-    female: '여성',
-};
 
-interface UploadPayload {
-    cloth_image: string;
-    human_gender: GenderKo;
-    human_height: string;
-    human_weight: string;
-    n_images: number;
-}
-
+// File -> base64 (태그 제거)
 const toBase64 = (file: File) =>
     new Promise<string>((resolve, reject) => {
         const fr = new FileReader();
         fr.onload = () => {
             const result = String(fr.result);
-            const pure = result.split(',')[1] || result;
-            resolve(pure);
+            const pureBase64 = result.split(',')[1] || result;
+            resolve(pureBase64);
         };
         fr.onerror = reject;
         fr.readAsDataURL(file);
@@ -48,6 +41,7 @@ export default function TryOnPage() {
     const [weight, setWeight] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    // Blob 미리보기
     useEffect(() => {
         if (!file) {
             if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -57,6 +51,7 @@ export default function TryOnPage() {
         const url = URL.createObjectURL(file);
         setPreviewUrl(url);
         return () => URL.revokeObjectURL(url);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [file]);
 
     const heightOptions = useMemo(() => (gender ? HEIGHT[gender] : []), [gender]);
@@ -65,14 +60,14 @@ export default function TryOnPage() {
     const ready = Boolean(file && gender && height && weight);
 
     const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const f = e.target.files?.[0] ?? null;
-        setFile(f);
+        const f = e.target.files?.[0];
+        if (f) setFile(f);
     };
 
     const onDrop = (e: React.DragEvent<HTMLLabelElement>) => {
         e.preventDefault();
-        const f = e.dataTransfer.files?.[0] ?? null;
-        setFile(f);
+        const f = e.dataTransfer.files?.[0];
+        if (f) setFile(f);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -82,46 +77,38 @@ export default function TryOnPage() {
         setSubmitting(true);
         try {
             const b64 = await toBase64(file);
-
-            const payload: UploadPayload = {
+            const payload = {
                 cloth_image: b64,
-                human_gender: GENDER_LABEL[gender],
+                human_gender: GENDER_LABEL[gender], // ✅ "남성" / "여성"
                 human_height: height,
                 human_weight: weight,
                 n_images: 1,
             };
 
+            // ✅ 프록시로 호출
             const res = await fetch('/api/upload', {
                 method: 'POST',
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
-            const json: unknown = await res.json();
-
-            if (!res.ok || !json || !(json as any).viton_images) {
-                throw new Error(
-                    (json as any)?.message ?? '업로드 실패'
-                );
+            const json = await res.json();
+            if (!res.ok || !json?.viton_images) {
+                throw new Error(json?.message || '업로드 실패');
             }
 
-            // ✅ alert 유지
+            // ✅ alert 유지(나중에 주석 처리 가능)
             alert('전송 완료!\n' + JSON.stringify(json, null, 2));
 
-            // ✅ sessionStorage 에 저장
-            sessionStorage.setItem(
-                'viton_images',
-                JSON.stringify((json as any).viton_images)
-            );
+            // ✅ 세션스토리지에 저장 (쿼리로 안 보냄 → URI_TOO_LONG 방지)
+            sessionStorage.setItem('viton_images', JSON.stringify(json.viton_images));
 
-            // ✅ URL 에 base64 안 붙임 (오류 방지)
+            // ✅ 짧은 URL 이동
             router.push('/result?status=success');
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : '에러';
             alert(msg);
-            router.push(
-                `/result?status=error&msg=${encodeURIComponent(msg)}`
-            );
+            router.push(`/result?status=error&msg=${encodeURIComponent(msg)}`);
         } finally {
             setSubmitting(false);
         }
@@ -137,7 +124,7 @@ export default function TryOnPage() {
                     맘에 드는 옷을<br />내 체형에 입혀보세요!
                 </h1>
 
-                {/* 업로드 */}
+                {/* 업로드 카드 */}
                 <section className="mt-5 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                     <label
                         onDragOver={(e) => e.preventDefault()}
@@ -151,22 +138,17 @@ export default function TryOnPage() {
                                     alt="preview"
                                     className="block max-h-full max-w-full object-contain"
                                     draggable={false}
+                                    style={{ imageOrientation: 'from-image' }}
                                 />
                             ) : (
                                 <div className="text-slate-500 text-center">
                                     <div className="text-sm font-medium">옷 사진 업로드</div>
-                                    <div className="text-xs mt-1">
-                                        클릭 또는 드래그 앤 드롭
-                                    </div>
+                                    <div className="text-xs mt-1">클릭 또는 드래그 앤 드롭</div>
                                 </div>
                             )}
                         </div>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={onPickFile}
-                        />
+
+                        <input type="file" accept="image/*" className="hidden" onChange={onPickFile} />
                     </label>
 
                     {file && (
@@ -185,14 +167,26 @@ export default function TryOnPage() {
 
                 {/* 성별 */}
                 <section className="mt-6">
-                    <div className="text-sm font-semibold text-slate-800 mb-2">
-                        성별
-                    </div>
+                    <div className="text-sm font-semibold text-slate-800 mb-2">성별</div>
                     <div className="grid grid-cols-2 gap-3">
-                        <Chip active={gender === 'male'} onClick={() => { setGender('male'); setHeight(''); setWeight(''); }}>
+                        <Chip
+                            active={gender === 'male'}
+                            onClick={() => {
+                                setGender('male');
+                                setHeight('');
+                                setWeight('');
+                            }}
+                        >
                             남자
                         </Chip>
-                        <Chip active={gender === 'female'} onClick={() => { setGender('female'); setHeight(''); setWeight(''); }}>
+                        <Chip
+                            active={gender === 'female'}
+                            onClick={() => {
+                                setGender('female');
+                                setHeight('');
+                                setWeight('');
+                            }}
+                        >
                             여자
                         </Chip>
                     </div>
@@ -203,25 +197,40 @@ export default function TryOnPage() {
                     <div>
                         <div className="mb-2 text-sm font-semibold text-slate-800">키</div>
                         <div className="flex flex-wrap gap-2">
-                            {(heightOptions.length ? heightOptions : ['성별을 먼저 선택']).map((opt) => (
-                                <Chip key={opt} active={height === opt} disabled={!gender} onClick={() => setHeight(opt)}>
-                                    {opt}
-                                </Chip>
-                            ))}
+                            {(heightOptions.length ? heightOptions : ['성별을 먼저 선택']).map(
+                                (opt) => (
+                                    <Chip
+                                        key={opt}
+                                        active={height === opt}
+                                        disabled={!gender}
+                                        onClick={() => setHeight(opt)}
+                                    >
+                                        {opt}
+                                    </Chip>
+                                )
+                            )}
                         </div>
                     </div>
                     <div>
                         <div className="mb-2 text-sm font-semibold text-slate-800">몸무게</div>
                         <div className="flex flex-wrap gap-2">
-                            {(weightOptions.length ? weightOptions : ['성별을 먼저 선택']).map((opt) => (
-                                <Chip key={opt} active={weight === opt} disabled={!gender} onClick={() => setWeight(opt)}>
-                                    {opt}
-                                </Chip>
-                            ))}
+                            {(weightOptions.length ? weightOptions : ['성별을 먼저 선택']).map(
+                                (opt) => (
+                                    <Chip
+                                        key={opt}
+                                        active={weight === opt}
+                                        disabled={!gender}
+                                        onClick={() => setWeight(opt)}
+                                    >
+                                        {opt}
+                                    </Chip>
+                                )
+                            )}
                         </div>
                     </div>
                 </section>
 
+                {/* 버튼 */}
                 <button
                     type="submit"
                     disabled={!ready || submitting}
