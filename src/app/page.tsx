@@ -98,7 +98,7 @@ export default function TryOnPage() {
             }
 
             // ✅ alert 유지(나중에 주석 처리 가능)
-            alert('전송 완료!\n' + JSON.stringify(json, null, 2));
+            // alert('전송 완료!\n' + JSON.stringify(json, null, 2));
 
             // ✅ 세션스토리지에 저장 (쿼리로 안 보냄 → URI_TOO_LONG 방지)
             sessionStorage.setItem('viton_images', JSON.stringify(json.viton_images));
