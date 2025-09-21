@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+/* v4: 커스텀 토큰/키프레임은 @theme 블록 안에서 정의 */
+@theme {
+  /* 배경이 좌↔우로 흐르는 키프레임 */
+  @keyframes gradient-x {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+
+  /* 살짝 위로 떠오르며 나타나는 키프레임 */
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 애니메이션 토큰 등록 → 클래스 `animate-gradient-x` / `animate-fade-in-up` 로 사용 */
+  --animate-gradient-x: gradient-x 6s ease-in-out infinite;
+  --animate-fade-in-up: fade-in-up .7s ease-out both;
+}
+
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -24,3 +44,4 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+

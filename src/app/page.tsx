@@ -119,10 +119,22 @@ export default function TryOnPage() {
             <form
                 onSubmit={handleSubmit}
                 className="mx-auto w-full max-w-md p-5 sm:p-6"
+            ><h1
+                className="
+    text-xl font-bold tracking-tight
+    text-white text-center
+    rounded-2xl px-4 py-6
+    bg-gradient-to-r from-orange-300 via-orange-400 to-orange-500
+    [background-size:200%_200%] bg-no-repeat
+    shadow-md
+    animate-fade-in-up
+  "
             >
-                <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                    맘에 드는 옷을<br />내 체형에 입혀보세요!
-                </h1>
+                맘에 드는 옷을<br />내 체형에 입혀보세요!
+            </h1>
+
+
+
 
                 {/* 업로드 카드 */}
                 <section className="mt-5 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
