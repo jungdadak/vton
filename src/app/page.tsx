@@ -107,7 +107,7 @@ export default function TryOnPage() {
             router.push('/result?status=success');
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : '에러';
-            alert(msg);
+            // alert(msg);
             router.push(`/result?status=error&msg=${encodeURIComponent(msg)}`);
         } finally {
             setSubmitting(false);
